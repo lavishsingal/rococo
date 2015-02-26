@@ -7,90 +7,19 @@ namespace rococo {
 struct entry_t {
     Vertex<TxnInfo> *last_ = NULL;
 
-//    Vertex<PieInfo> *rsp = nullptr; // read source piece
-//    Vertex<PieInfo> *wsp = nullptr;
-//    Vertex<TxnInfo> *rst = nullptr;
-//    Vertex<TxnInfo> *wst = nullptr;
-
     const entry_t &operator=(const entry_t &rhs) {
-//        rsp = rhs.rsp;
-//        wsp = rhs.wsp;
-//        rst = rhs.rst;
-//        wst = rhs.wst;
         last_ = rhs.last_;
         return *this;
     }
 
     entry_t() {
-//        rsp = nullptr;
-//        wsp = nullptr;
-//        rst = nullptr;
-//        wst = nullptr;
     }
 
     entry_t(const entry_t &o) {
-//       rsp = o.rsp;
-//       wsp = o.wsp;
-//       rst = o.rst;
-//       wst = o.wst;
         last_ = o.last_;
     }
 
     void touch(Vertex<TxnInfo> *tv, bool immediate);
-
-    // deprecated.
-//    void touch(Vertex<PieInfo> *pv, Vertex<TxnInfo> *tv, int target_type) {
-//        verify(0);
-//
-//        if (target_type & OP_W) {
-//            int8_t relation = 0;
-//            if (rsp != nullptr) {
-//                relation = rsp->data_.defer_? DRW : IRW;
-//
-//                rsp->to_[pv] |= relation;
-//                pv->from_[rsp] |= relation;
-//
-//                rst->to_[tv] |= relation;
-//                tv->from_[rst] |= relation;
-//            }
-//            if (wsp != nullptr) {
-//                relation = WW;
-//
-//                wsp->to_[pv] |= relation;
-//                pv->from_[wsp] |= relation;
-//
-//                wst->to_[tv] |= relation;
-//                tv->from_[wst] |= relation;
-//            }
-//        }
-//        if (target_type & OP_R) {
-//            int8_t relation = 0;
-//            if (target_type & OP_IR) {
-//                relation |= WIR;
-//            }
-//            if (target_type & OP_DR) {
-//                relation |= WDR;
-//            }
-//
-//            if (wsp != nullptr) {
-//                wsp->to_[pv] |= relation;
-//                pv->from_[wsp] |= relation;
-//
-//                wst->to_[tv] |= relation;
-//                tv->from_[wst] |= relation;
-//            }
-//        }
-//
-//        if (target_type & OP_W) {
-//            wsp = pv;
-//            wst = tv;
-//            rsp = nullptr;
-//            rst = nullptr;
-//        } else if (target_type & OP_R) {
-//            rsp = pv;
-//            rst = tv;
-//        }
-//    }
 
     void ro_touch(std::vector<TxnInfo *> *conflict_txns) {
         if (last_)
@@ -179,11 +108,6 @@ struct cell_locator {
     std::string tbl_name;
     MultiValue primary_key;
     int col_id;
-
-    //std::size_t operator() () const {
-    //    return std::hash<std::string>()(tbl_name) ^
-    //        (std::hash<std::int>()(col_id) << 1);
-    //}
 
     bool operator== (const cell_locator &rhs) const {
         return (tbl_name == rhs.tbl_name) && (primary_key == rhs.primary_key) && (col_id == rhs.col_id);
@@ -323,12 +247,6 @@ typedef std::unordered_map<char *, std::unordered_map<mdb::MultiBlob, mdb::Row *
 class TxnRegistry {
 public:
 
-
-//    typedef std::function<void (const RequestHeader& header,
-//                                const Value* input,
-//                                rrr::i32 input_size,
-//                                std::unordered_map<cell_locator_t, int, cell_locator_t_hash> *opset)> LockSetOracle;
-
     static inline void reg(
             base::i32 t_type, 
             base::i32 p_type,
@@ -339,13 +257,6 @@ public:
         verify(it == all_.end());
         all_[func_key] = (txn_handler_defer_pair_t){txn_handler, defer};
     }
-
-//    static inline void reg_lock_oracle(base::i32 t_type, base::i32 p_type, const LockSetOracle& lck_oracle) {
-//        auto func_key = std::make_pair(t_type, p_type);
-//        auto it = lck_oracle_.find(func_key);
-//        verify(it == lck_oracle_.end());
-//        lck_oracle_[func_key] = lck_oracle;
-//    }
 
     static inline txn_handler_defer_pair_t get(
             const base::i32 t_type,
@@ -359,18 +270,6 @@ public:
     static inline txn_handler_defer_pair_t get(const RequestHeader& req_hdr) {
         return get(req_hdr.t_type, req_hdr.p_type);
     }
-
-//    static inline LockSetOracle get_lock_oracle(base::i32 t_type, base::i32 p_type) {
-//        auto it = lck_oracle_.find(std::make_pair(t_type, p_type));
-//        // Log::debug("t_type: %d, p_type: %d", t_type, p_type);
-//        verify(it != lck_oracle_.end());
-//        verify(it->second != nullptr);
-//        return it->second;
-//    }
-//
-//    static inline LockSetOracle get_lock_oracle(const RequestHeader& req_hdr) {
-//        return get_lock_oracle(req_hdr.t_type, req_hdr.p_type);
-//    }
 
     static void pre_execute_2pl(const RequestHeader& header,
                                const std::vector<mdb::Value>& input,
@@ -417,87 +316,6 @@ private:
 
 };
 
-class RCC {
-public:
-
-    static void start_pie(
-            const RequestHeader &header,
-            const std::vector<mdb::Value> &input,
-            bool *deferred,
-            std::vector<mdb::Value> *output
-    );
-
-    static void start(
-            const RequestHeader &header,
-            const std::vector<mdb::Value> &input,
-            bool &is_defered,
-            std::vector<mdb::Value> &output,
-            Vertex<PieInfo> *pv,
-            Vertex<TxnInfo> *tv
-            //cell_entry_map_t *rw_entry
-    );
-
-    static void start_ro(
-            const RequestHeader &header,
-            const std::vector<mdb::Value> &input,
-            std::vector<mdb::Value> &output,
-            std::vector<TxnInfo *> *conflict_txns
-    );
-
-    static void finish(
-            i64 tid,
-            std::vector<std::pair<RequestHeader, std::vector<mdb::Value> > > &outputs);
-
-    typedef struct {
-        RequestHeader header;
-        std::vector<mdb::Value> inputs;
-        row_map_t row_map;
-    } DeferredRequest;
-
-
-    static map<i64, std::vector<DeferredRequest>> deferred_reqs_;
-
-    static DepGraph *dep_s;
-};
-
-class TPL {
-public:
-    static int do_prepare(i64 txn_id);
-
-    static int do_commit(i64 txn_id);
-
-    static int do_abort(i64 txn_id/*, rrr::DeferredReply* defer*/);
-
-    static std::function<void(void)> get_2pl_proceed_callback(
-            const RequestHeader &header,
-            const mdb::Value *input,
-            rrr::i32 input_size,
-            rrr::i32 *res);
-
-    static std::function<void(void)> get_2pl_fail_callback(
-            const RequestHeader &header,
-            rrr::i32 *res,
-            mdb::Txn2PL::PieceStatus *ps);
-
-    static std::function<void(void)> get_2pl_succ_callback(
-            const RequestHeader &header,
-            const mdb::Value *input,
-            rrr::i32 input_size,
-            rrr::i32 *res,
-            mdb::Txn2PL::PieceStatus *ps,
-            std::function<void(
-                    const RequestHeader &,
-                    const Value *,
-                    rrr::i32,
-                    rrr::i32 *)> func);
-
-    static std::function<void(void)> get_2pl_succ_callback(
-            const RequestHeader &req,
-            const mdb::Value *input,
-            rrr::i32 input_size,
-            rrr::i32 *res,
-            mdb::Txn2PL::PieceStatus *ps);
-};
 
 // TODO: seems that this class is both in charge of of the Txn playground and the 2PL/OCC controller.
 // in charge of locks and staging area
@@ -515,7 +333,7 @@ public:
 
     static void reg_table(const string& name,
             mdb::Table *tbl
-            );
+    );
 
     static mdb::Txn *get_txn(const i64 tid);
 
@@ -523,13 +341,9 @@ public:
 
     static mdb::Txn *del_txn(const i64 tid);
 
-//    static txn_entry_t *get_txn_entry(const RequestHeader &req);
-//
-//    static PieceStatus *get_piece_status(const RequestHeader &req, bool insert = false);
-//
     static inline
-        mdb::Table
-        *get_table(const string& name) {
+    mdb::Table
+    *get_table(const string& name) {
         return txn_mgr_s->get_table(name);
     }
 
@@ -542,6 +356,174 @@ private:
 
     static map<i64, mdb::Txn *> txn_map_s;
     static mdb::TxnMgr *txn_mgr_s;
+
+};
+
+
+class DTxnMgr;
+
+class DTxn {
+public:
+    int64_t tid_;
+    DTxnMgr *mgr_;
+
+    DTxn() = delete;
+
+    DTxn(i64 tid, DTxnMgr* mgr) : tid_(tid), mgr_(mgr) {
+
+    }
+};
+
+
+
+class RCCDTxn : public DTxn {
+public:
+
+    RCCDTxn(i64 tid, DTxnMgr* mgr) : DTxn(tid, mgr) {
+
+    }
+
+    void start(
+            const RequestHeader &header,
+            const std::vector<mdb::Value> &input,
+            bool *deferred,
+            std::vector<mdb::Value> *output
+    );
+
+    void start_ro(
+            const RequestHeader &header,
+            const std::vector<mdb::Value> &input,
+            std::vector<mdb::Value> &output,
+            std::vector<TxnInfo *> *conflict_txns
+    );
+
+    void commit(
+            const ChopFinishRequest &req,
+            ChopFinishResponse* res,
+            rrr::DeferredReply* defer
+    );
+
+    void to_decide(
+            Vertex<TxnInfo> *v,
+            rrr::DeferredReply* defer
+    );
+
+    void exe_deferred(
+            std::vector<std::pair<RequestHeader, std::vector<mdb::Value> > > &outputs
+    );
+
+    void send_ask_req(
+            Vertex<TxnInfo>* av
+    );
+
+    typedef struct {
+        RequestHeader header;
+        std::vector<mdb::Value> inputs;
+        row_map_t row_map;
+    } DeferredRequest;
+
+
+    std::vector<DeferredRequest> dreqs_;
+
+    static DepGraph *dep_s;
+};
+
+class RO6DTxn : public RCCDTxn {
+public:
+    RO6DTxn(i64 tid, DTxnMgr* mgr): RCCDTxn(tid, mgr) {
+
+    }
+};
+
+class TPL {
+public:
+    static int do_prepare(i64 txn_id);
+
+    static int do_commit(i64 txn_id);
+
+    static int do_abort(i64 txn_id);
+
+    static std::function<void(void)> get_2pl_proceed_callback(
+            const RequestHeader &header,
+            const mdb::Value *input,
+            rrr::i32 input_size,
+            rrr::i32 *res
+    );
+
+    static std::function<void(void)> get_2pl_fail_callback(
+            const RequestHeader &header,
+            rrr::i32 *res,
+            mdb::Txn2PL::PieceStatus *ps
+    );
+
+    static std::function<void(void)> get_2pl_succ_callback(
+            const RequestHeader &header,
+            const mdb::Value *input,
+            rrr::i32 input_size,
+            rrr::i32 *res,
+            mdb::Txn2PL::PieceStatus *ps,
+            std::function<void(
+                    const RequestHeader &,
+                    const Value *,
+                    rrr::i32,
+                    rrr::i32 *)> func
+    );
+
+    static std::function<void(void)> get_2pl_succ_callback(
+            const RequestHeader &req,
+            const mdb::Value *input,
+            rrr::i32 input_size,
+            rrr::i32 *res,
+            mdb::Txn2PL::PieceStatus *ps
+    );
+};
+
+class OCC : public TPL {
+
+};
+
+class DTxnMgr {
+public:
+    std::map<i64, DTxn*> dtxns_;
+
+    DTxn* create(i64 tid) {
+        DTxn* ret = nullptr;
+        switch (TxnRunner::get_running_mode()) {
+            case MODE_RCC:
+                ret = new RCCDTxn(tid, this);
+                break;
+            case MODE_ROT:
+                ret = new RO6DTxn(tid, this);
+                break;
+            default:
+                verify(0);
+        }
+        verify(dtxns_[tid] == nullptr);
+        dtxns_[tid] = ret;
+        return ret;
+    }
+
+    void destroy(i64 tid) {
+        auto it = dtxns_.find(tid);
+        verify(it != dtxns_.end());
+        delete it->second;
+        dtxns_.erase(it);
+    }
+
+    DTxn* get(i64 tid) {
+        auto it = dtxns_.find(tid);
+        verify(it != dtxns_.end());
+        return it->second;
+    }
+
+    DTxn* get_or_create(i64 tid) {
+        auto it = dtxns_.find(tid);
+        if (it == dtxns_.end()) {
+            return create(tid);
+        } else {
+            return it->second;
+        }
+    }
 
 };
 

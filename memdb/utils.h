@@ -17,7 +17,7 @@ using base::Log;
 using base::insert_into_map;
 using base::format_decimal;
 
-typedef int64_t version_t;
+typedef uint64_t version_t;
 typedef int column_id_t;
 
 typedef enum {
@@ -27,6 +27,7 @@ typedef enum {
     ROW_COARSE,
     ROW_FINE,
     ROW_VERSIONED,
+    ROW_MULTIVER,
 
     TBL_SORTED,
     TBL_UNSORTED,
